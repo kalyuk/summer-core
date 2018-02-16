@@ -1,5 +1,4 @@
 import 'reflect-metadata';
-import { Application } from '../Application';
 
 export enum ScopeType {
   singleton = 'singleton',
@@ -10,53 +9,79 @@ export interface ContainerOptions {
   scopeType: ScopeType;
 }
 
+interface TargetOptions {
+  map?: any;
+  instance?: new (...args) => void;
+}
+
 export class Container {
-  private static container: Container;
-  private static registry: Map<any, ContainerOptions> = new Map<any, ContainerOptions>();
+  private static readonly registry: Map<Function, ContainerOptions> = new Map<Function, ContainerOptions>();
+  private readonly registry: Map<Function, TargetOptions> = new Map<Function, TargetOptions>();
+  private appContext: any = null;
 
-  public static getContainer() {
-    if (!Container.container) {
-      Container.container = new Container();
+  public static set(classLink: Function, scopeType: ScopeType = ScopeType.singleton, options = {}) {
+    Container.registry.set(classLink, {...options, scopeType});
+  }
+
+  public static getOptions(classLink): ContainerOptions {
+    if (!Container.registry.has(classLink)) {
+      Container.registry.set(classLink, {scopeType: ScopeType.factory});
     }
-    return Container.container;
+    return Container.registry.get(classLink);
   }
 
-  public static setContainer(container: Container) {
-    Container.container = container;
-  }
+  public get<T>(classLink: (new(...args) => T)) {
+    const staticOptions = Container.getOptions(classLink);
+    const options = this.registry.get(classLink) || {};
 
-  public static extendContainer = (container: Container) => {
-    console.log('need to be implemented');
-  }
-
-  public static register(target, scopeType: ScopeType) {
-    Container.registry.set(target, {scopeType});
-  }
-
-  public getInstance(target: any, context: Application) {
-    const options = Container.registry.get(target);
-    if (!(context as any).__beanCache) {
-      (context as any).__beanCache = {};
+    if (!this.appContext) {
+      this.appContext = this;
     }
-    if ((context as any).__beanCache[target]) {
-      return (context as any).__beanCache[target];
-    }
+    let instance = null;
+    if (!options || !options.instance) {
+      const target = this.getMappingClassLink(classLink);
 
-    const params = (Reflect.getMetadata('design:paramtypes', target) || [])
-      .map((param) => param ? this.getInstance(param, context) : void(0));
+      // tslint:disable-next-line
+      const $this = this;
 
-    // tslint:disable-next-line
-    const Instance = class extends target {
-      public get appContext(): Application {
-        return context;
+      class Instance extends target {
+        public get container() {
+          return $this;
+        }
+
+        public get context() {
+          return $this.appContext || this;
+        }
       }
-    };
 
-    const instance = new (Instance as any)(...params);
-    if (options.scopeType === ScopeType.singleton) {
-      (context as any).__beanCache[target] = instance;
+      const params = (Reflect.getMetadata('design:paramtypes', classLink) || [])
+        .map((param) => param ? this.get(param) : void(0));
+
+      instance = new (Instance as any)(...params);
+
+      if (staticOptions.scopeType === ScopeType.singleton) {
+        options.instance = instance;
+        this.registry.set(classLink, {instance});
+      }
     }
 
     return instance;
+  }
+
+  public bind(classLink, newClassLink) {
+    const options = this.registry.get(classLink) || {};
+    options.map = newClassLink;
+    if (options.instance) {
+      throw new Error('class can be replaced before calling');
+    }
+    this.registry.set(classLink, options);
+  }
+
+  private getMappingClassLink(target) {
+    const options = this.registry.get(target);
+    if (options && options.map) {
+      return options.map;
+    }
+    return target;
   }
 }

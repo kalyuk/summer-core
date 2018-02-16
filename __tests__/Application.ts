@@ -1,16 +1,41 @@
-import { Service } from '../build/annotation/Service';
-import { Application } from '../build/Application';
+import * as assert from 'assert';
+import { Context } from '../src/annotation/Context';
+import { Service } from '../src/annotation/Service';
+import { Application } from '../src/Application';
 
-@Service()
-export class Gateway {
-  public test() {
-    console.log('tttt')
-  }
+const config = {
+  default: {}
+};
+
+class SameService {
+  public serviceName = 'Service';
 }
 
 describe('Application', () => {
 
-  const app = new Application();
-  const g = app.getInstance(Gateway);
-  g.test();
+  it('should be create new context', function () {
+    @Context(config)
+    class ContextApp1 {
+      public test = 1;
+    }
+
+    const context = Application.run(ContextApp1);
+    assert.equal(1, context.test);
+  });
+
+  it('should be inject into constructor', function () {
+    let name = null;
+
+    @Context(config)
+    class ContextApp {
+      constructor(sn: SameService) {
+        name = sn.serviceName;
+      }
+    }
+
+    Application.run(ContextApp);
+
+    assert(name === 'Service');
+  });
+
 });

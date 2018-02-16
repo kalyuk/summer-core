@@ -1,11 +1,14 @@
-export function Value(key: string, defaultValue: any = null) {
+export function Value(key: string | Function, defaultValue: any) {
   return (target, property): any => {
     if (!property) {
-      throw new Error('value of bind only on method or property');
+      throw new Error('Value decorator work only on property');
     }
     return {
       get: function () {
-        // return this.getAppContext().getConfig(key) || defaultValue;
+        if (typeof key === 'string') {
+          return this.context.getConfig(key) || defaultValue;
+        }
+        return key(defaultValue);
       }
     };
   };

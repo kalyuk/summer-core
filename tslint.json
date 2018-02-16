@@ -39,6 +39,7 @@
       "static-before-instance",
       "variables-before-functions"
     ],
+    "no-implicit-dependencies": false,
     "no-angle-bracket-type-assertion": true,
     "no-default-export": false,
     "no-empty-interface": true,
@@ -55,12 +56,7 @@
       }
     ],
     "switch-default": false,
-    "variable-name": [
-      true,
-      "ban-keywords",
-      "check-format",
-      "allow-leading-underscore"
-    ],
+    "variable-name": false,
     "trailing-comma": [
       true,
       {

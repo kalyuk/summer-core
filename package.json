@@ -1,6 +1,6 @@
 {
   "name": "summer-core",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "typings": "index",
   "directories": {
     "lib": "./build"
@@ -9,9 +9,7 @@
   "author": "Dmitry Kalyuk <dmitry@kalyuk.ru>",
   "license": "MIT",
   "scripts": {
-    "prepublish": "yarn build",
     "build": "tsc",
-    "e": "ts-node ./example/Application.ts",
     "test": "nyc --extension=.ts --lines 80 --per-file mocha --require ts-node/register ./__tests__/**/*.ts ",
     "test:watch": "mocha --require ts-node/register ./__tests__/**/*.ts --watch --watch-extensions ts"
   },
@@ -27,7 +25,9 @@
     "typescript": "^2.7.1"
   },
   "dependencies": {
+    "@types/lodash": "^4.14.102",
     "@types/reflect-metadata": "^0.1.0",
-    "reflect-metadata": "^0.1.12"
+    "reflect-metadata": "^0.1.12",
+    "uuid": "^3.2.1"
   }
 }
